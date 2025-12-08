@@ -1,4 +1,5 @@
-from fastapi import APIRouter, WebSocket
+from multiprocessing import Queue
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 router = APIRouter(prefix="/ws", tags=["stream"])
 
@@ -9,12 +10,14 @@ async def websocket_endpoint(websocket: WebSocket):
     References: https://fastapi.tiangolo.com/advanced/websockets/#handling-disconnections-and-multiple-clients
     """
     await websocket.accept() 
+    queue: Queue = websocket.app.state.video_queue
     try:
         while True:
             # 이미지를 바이트로 수신
             data = await websocket.receive_bytes()
             # TODO: 이미지를 Consumer에게 전달
             print("Image received.")
+            queue.put(data)
     except WebSocketDisconnect:
         print("클라이언트 연결 종료")
     except Exception as e:
