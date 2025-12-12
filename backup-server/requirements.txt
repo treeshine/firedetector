@@ -34,6 +34,7 @@ rich-toolkit==0.17.0
 rignore==0.7.6
 sentry-sdk==2.47.0
 shellingham==1.5.4
+SQLAlchemy==2.0.45
 starlette==0.50.0
 typer==0.20.0
 typing-inspection==0.4.2

@@ -34,6 +34,7 @@ async def lifespan(app: FastAPI):
     worker.join()
     queue.close()
     print("서버 닫음...")
+    exit(0)
 
 
 # 생명주기 핸들링 Attach

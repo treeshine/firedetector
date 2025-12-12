@@ -1,16 +1,19 @@
 from multiprocessing import Queue, current_process
 from queue import Empty
 from datetime import datetime, timedelta
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 import cv2
 import pytz
 import numpy as np
 import os
 
 from src.config.config import settings
+from src.db.models.video import Video
 
 timezone = pytz.timezone(settings.tz)
-workdir = os.path.join(settings.data_path, "videos")
-print(workdir)
+video_workdir = os.path.join(settings.data_path, "videos")
+thumbnail_workdir = os.path.join(settings.data_path, "thumbs")
 
 def video_worker(queue: Queue):
     """
@@ -18,6 +21,10 @@ def video_worker(queue: Queue):
     30초단위로 영상을 끊어서 저장
     영상 저장 파일명: backup-<RFC3339 timestamp>.mp4
     """
+    # --- DB 엔진 설정
+    # 별도 워커 프로세스이기에, engine을 새로 초기화 필요
+    engine = create_engine(f'sqlite:///{settings.data_path}/video_metadata.db')
+    SessionLocal = sessionmaker(bind=engine)
     print(f"[Worker] 가동 시작, PID:{current_process().pid}")
     
     try:
@@ -52,7 +59,8 @@ def video_worker(queue: Queue):
                 # 첫 프레임일 경우, 시간 초기화 및 videoWriter 초기화.
                 if first:
                     start_time = datetime.now(timezone)
-                    video_name = os.path.join(workdir, f"backup-{start_time.isoformat()}.mp4")
+                    pure_name = f"{start_time.isoformat()}" # RFC3339 Format
+                    video_name = os.path.join(video_workdir, f"backup-{pure_name}.mp4")
                     height, width, _ = img.shape
                     video = cv2.VideoWriter(
                         video_name,
@@ -62,8 +70,8 @@ def video_worker(queue: Queue):
                     )
                     first = False
 
-                # 시간 지나면, 관둠
-                if datetime.now(timezone) >= start_time + timedelta(seconds=30):
+                # 시간 지나면, 영상 끊음
+                if datetime.now(timezone) >= start_time + timedelta(seconds=settings.max_video_len):
                     break
 
                 # 비디오에 프레임 추가
@@ -72,7 +80,24 @@ def video_worker(queue: Queue):
             # 영상 파일 Flush
             if video is not None:
                 print(f"[Worker] video saved: {video_name}")
+                # 비디오 저장
                 video.release()
+                thumbnail_name = os.path.join(thumbnail_workdir, f"thumb-{pure_name}.jpeg")
+                # 마지막 프레임을 썸네일로...
+                cv2.imwrite(thumbnail_name, img)
+                # 영상 메타데이터 DB에 저장
+                with SessionLocal() as s:
+                    new_video = Video(
+                        name = "[Backup] " + pure_name,
+                        thumbnail_link = thumbnail_name,
+                        video_link = video_name,
+                        # file_size = 
+                        # duration = 
+                    )
+                    # 데이터 추가
+                    s.add(new_video)
+                    # commit
+                    s.commit()
                 video = None # 혹시모를 중복 release()방지
 
     # SIGINT 조용히 받기(stacktrace 출력 방지)
@@ -83,5 +108,22 @@ def video_worker(queue: Queue):
     finally:
         if video is not None:
             print(f"[Worker] video saved: {video_name}")
+            # 비디오 저장..
             video.release()
-            video = None # 혹시모를 중복 release() 방지
+            thumbnail_name = os.path.join(thumbnail_workdir, f"thumb-{pure_name}.jpeg")
+            # 마지막 프레임을 썸네일로..
+            cv2.imwrite(thumbnail_name, img)
+            # 영상 메타데이터 DB에 저장
+            with SessionLocal() as s:
+                new_video = Video(
+                    name = "[Backup]" + pure_name,
+                    thumbnail_link = thumbnail_name,
+                    video_link = video_name,
+                    # file_size = 
+                    # duration = 
+                )
+                # 데이터 추가
+                s.add(new_video)
+                # commit
+                s.commit()
+            video = None # 혹시모를 중복 release()방지

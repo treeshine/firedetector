@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     """
     data_path: str = "/var/fddata" # 데이터 저장 루트경로
     tz: str = "Asia/Seoul" # Timezone
+    max_video_len: int = 30 # 기본 영상 청크 길이 30초
     # .env파일 매핑하도록 설정
     # 우선순위: 시스템 환경변수 > .env이므로 유의
     model_config = SettingsConfigDict(
