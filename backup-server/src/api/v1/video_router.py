@@ -1,5 +1,11 @@
+import logging
+
 from multiprocessing import Queue
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from src.core.config import settings
+
+logger = logging.getLogger("app")
+logger.setLevel(settings.log_level)
 
 router = APIRouter(prefix="/ws", tags=["stream"])
 
@@ -11,6 +17,8 @@ async def websocket_endpoint(websocket: WebSocket):
     """
     await websocket.accept() 
     queue: Queue = websocket.app.state.video_queue
+    client_con_info = f"{websocket.client.host}:{websocket.client.port}"
+    logger.info(f"Websocket 연결: {client_con_info}")
     try:
         while True:
             # 이미지를 바이트로 수신
@@ -18,9 +26,9 @@ async def websocket_endpoint(websocket: WebSocket):
             # 이미지를 Consumer에게 전달
             queue.put(data)
     except WebSocketDisconnect:
-        print("클라이언트 연결 종료")
+        logger.info(f"클라이언트 연결 종료: {client_con_info}")
     except Exception as e:
-        print(f"websocket error: {e}")
+        logger.error(f"Websocket 에러: {e}")
     finally:
         # 종료 시도
         try:

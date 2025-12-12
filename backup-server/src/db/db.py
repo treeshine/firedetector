@@ -2,7 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
-from src.config.config import settings
+from src.core.config import settings
 
 # 데이터베이스 연결
 engine = create_engine(f'sqlite:///{settings.data_path}/video_metadata.db')

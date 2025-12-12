@@ -8,7 +8,8 @@ import pytz
 import numpy as np
 import os
 
-from src.config.config import settings
+from src.core.logger import new_logger
+from src.core.config import settings
 from src.db.models.video import Video
 
 timezone = pytz.timezone(settings.tz)
@@ -21,11 +22,14 @@ def video_worker(queue: Queue):
     30초단위로 영상을 끊어서 저장
     영상 저장 파일명: backup-<RFC3339 timestamp>.mp4
     """
+    # --- logger 설정 ---
+    logger = new_logger("worker")
+
     # --- DB 엔진 설정
     # 별도 워커 프로세스이기에, engine을 새로 초기화 필요
     engine = create_engine(f'sqlite:///{settings.data_path}/video_metadata.db')
     SessionLocal = sessionmaker(bind=engine)
-    print(f"[Worker] 가동 시작, PID:{current_process().pid}")
+    logger.info(f"가동 시작, PID: {current_process().pid}")
     
     try:
         while True:
@@ -47,13 +51,13 @@ def video_worker(queue: Queue):
             
                 # None을 큐로부터 받으면, 종료(main.py 참고)
                 if raw is None:
-                    print(f"[Worker] 종료 신호 수신")
+                    logger.info("종료 신호 수신")
                     return
 
                 # 바이트 이미지 디코딩..
                 img = cv2.imdecode(np.frombuffer(raw, np.uint8), cv2.IMREAD_COLOR)
                 if img is None:
-                    print("[Worker] 이미지 디코딩 실패")
+                    logger.error("이미지 디코딩 실패")
                     continue
             
                 # 첫 프레임일 경우, 시간 초기화 및 videoWriter 초기화.
@@ -79,12 +83,13 @@ def video_worker(queue: Queue):
 
             # 영상 파일 Flush
             if video is not None:
-                print(f"[Worker] video saved: {video_name}")
                 # 비디오 저장
                 video.release()
+                logger.info(f"비디오 저장: {video_name}")
                 thumbnail_name = os.path.join(thumbnail_workdir, f"thumb-{pure_name}.jpeg")
                 # 마지막 프레임을 썸네일로...
                 cv2.imwrite(thumbnail_name, img)
+                logger.info(f"비디오 썸네일 저장: {thumbnail_name}")
                 # 영상 메타데이터 DB에 저장
                 with SessionLocal() as s:
                     new_video = Video(
@@ -106,24 +111,30 @@ def video_worker(queue: Queue):
 
     # 워커 종료 전, 혹시라도 저장못한 영상이 있다면 저장.
     finally:
-        if video is not None:
-            print(f"[Worker] video saved: {video_name}")
-            # 비디오 저장..
-            video.release()
-            thumbnail_name = os.path.join(thumbnail_workdir, f"thumb-{pure_name}.jpeg")
-            # 마지막 프레임을 썸네일로..
-            cv2.imwrite(thumbnail_name, img)
-            # 영상 메타데이터 DB에 저장
-            with SessionLocal() as s:
-                new_video = Video(
-                    name = "[Backup]" + pure_name,
-                    thumbnail_link = thumbnail_name,
-                    video_link = video_name,
-                    # file_size = 
-                    # duration = 
-                )
-                # 데이터 추가
-                s.add(new_video)
-                # commit
-                s.commit()
-            video = None # 혹시모를 중복 release()방지
+        try:
+            if video is not None:
+                # 비디오 저장..
+                video.release()
+                logger.info(f"비디오 저장: {video_name}")
+                thumbnail_name = os.path.join(thumbnail_workdir, f"thumb-{pure_name}.jpeg")
+                # 마지막 프레임을 썸네일로..
+                cv2.imwrite(thumbnail_name, img)
+                logger.info(f"비디오 썸네일 저장: {thumbnail_name}")
+                # 영상 메타데이터 DB에 저장
+                with SessionLocal() as s:
+                    new_video = Video(
+                        name = "[Backup]" + pure_name,
+                        thumbnail_link = thumbnail_name,
+                        video_link = video_name,
+                        # file_size = 
+                        # duration = 
+                    )
+                    # 데이터 추가
+                    s.add(new_video)
+                    # commit
+                    s.commit()
+                video = None # 혹시모를 중복 release()방지
+        except Exception:
+            logger.warning("아무 video도 저장한 적 없음..")
+        finally:
+            logger.info("종료..")

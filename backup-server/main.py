@@ -1,9 +1,11 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from multiprocessing import Process, Queue
+from multiprocessing import Process, Queue, current_process
 
-from src.config.config import settings
+from src.core.config import settings
+from src.core.logger import new_logger, clear_uvicorn_logger
 from src.backup.backup import video_worker
+from src.middleware.log_httpreq import JsonLogMiddleware
 import src.api.v1.video_router as video_router
 
 # FastAPI 인스턴스 생성
@@ -17,7 +19,9 @@ async def lifespan(app: FastAPI):
         - https://www.starlette.dev/applications/#storing-state-on-the-app-instance
     """
     # --- Startup ---
-    print("서버 가동 시작..")
+    clear_uvicorn_logger()
+    logger = new_logger("app")
+    logger.info(f"서버 가동 시작, PID: {current_process().pid}")
     # 큐와 워커 프로세스 생성
     queue = Queue()
     worker = Process(target=video_worker, args=(queue, ))
@@ -33,12 +37,16 @@ async def lifespan(app: FastAPI):
     queue.put(None)
     worker.join()
     queue.close()
-    print("서버 닫음...")
-    exit(0)
+    logger.info("서버 닫음...")    
 
 
 # 생명주기 핸들링 Attach
 app = FastAPI(lifespan=lifespan)
+app.add_middleware(JsonLogMiddleware)
 
 # 요청 라우터 붙이기
 app.include_router(video_router.router)
+
+@app.get("/")
+async def hellowordl():
+    return { "response:" "hello world!"}
