@@ -1,38 +1,51 @@
 import logging
+from datetime import datetime
+from fastapi import APIRouter, Depends
+from fastapi.responses import FileResponse, RedirectResponse, JSONResponse
 
-from multiprocessing import Queue
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from src.api.v1.deps import get_video_service
+from src.services.video_service import VideoService
 from src.core.config import settings
 
 logger = logging.getLogger("app")
 logger.setLevel(settings.log_level)
 
-router = APIRouter(prefix="/ws", tags=["stream"])
+router = APIRouter(prefix="/api/v1", tags=["stream"])
 
-@router.websocket("")
-async def websocket_endpoint(websocket: WebSocket):
-    """
-    websocket_endpoint - WebSocket으로 이미지를 스트리밍받아서, 저장
-    References: https://fastapi.tiangolo.com/advanced/websockets/#handling-disconnections-and-multiple-clients
-    """
-    await websocket.accept() 
-    queue: Queue = websocket.app.state.video_queue
-    client_con_info = f"{websocket.client.host}:{websocket.client.port}"
-    logger.info(f"Websocket 연결: {client_con_info}")
+@router.get("/videos/backup")
+def get_backup_videos(video_service: VideoService = Depends(get_video_service)):
+    return video_service.get_backup_video_list()
+
+@router.get("/thumbnail/backup/{id}")
+def read_thumbnail(id, video_service: VideoService = Depends(get_video_service)):
     try:
-        while True:
-            # 이미지를 바이트로 수신
-            data = await websocket.receive_bytes()
-            # 이미지를 Consumer에게 전달
-            queue.put(data)
-    except WebSocketDisconnect:
-        logger.info(f"클라이언트 연결 종료: {client_con_info}")
+        res = video_service.get_backup_thumbnail(id)
+        if settings.enable_r2:
+            return RedirectResponse(url=res)
+        else:
+            return FileResponse(
+                path=res,
+                media_type="image/jpeg",
+            )
     except Exception as e:
-        logger.error(f"Websocket 에러: {e}")
-    finally:
-        # 종료 시도
-        try:
-            await websocket.close()
-        except RuntimeError:
-            # 이미 닫혀있는 경우, 무시
-            pass
+        logger.error(f"File fetch error {e}")
+
+@router.get("/videos/backup/{id}")
+def read_video(id, video_service: VideoService = Depends(get_video_service)):
+    try:
+        res = video_service.get_backup_video_path(id)
+        if settings.enable_r2:
+            return RedirectResponse(
+                url=res
+            )
+        else:
+            return FileResponse(
+                path=res,
+                media_type="video/mp4",
+            )
+    except Exception as e:
+        logger.error(f"File fetch error {e}")
+
+@router.get("/videos/fp")
+def get_fp_videos(video_service: VideoService = Depends(get_video_service)):
+    return video_service.get_fp_video_list()

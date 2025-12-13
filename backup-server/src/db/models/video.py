@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, func
+from sqlalchemy import Column, Integer, String, DateTime, func
 
 from src.db.db import Base
 
@@ -12,8 +12,8 @@ class Video(Base):
     __tablename__ = 'videos'
     id = Column(Integer, primary_key=True)
     name = Column(String)
-    thumbnail_link = Column(String)
-    video_link = Column(String)
+    thumbnail_path = Column(String)
+    file_path = Column(String)
     file_size = Column(Integer)
-    duration = Column(Float)
+    duration = Column(String)
     created_at = Column(DateTime(), default = func.now())
