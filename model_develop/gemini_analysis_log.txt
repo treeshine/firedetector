@@ -1,0 +1,91 @@
+[2025-12-13 00:06:55] Gemini 분석 결과: 화재 없음
+[2025-12-13 00:07:03] Gemini 분석 결과: 화재 없음
+[2025-12-13 00:07:13] Gemini 분석 결과: 화재 없음
+[2025-12-13 00:07:23] Gemini 분석 결과: 화재 없음
+[2025-12-13 00:07:34] Gemini 분석 결과: 화재 없음
+[2025-12-13 00:07:43] Gemini 분석 결과: 화재 없음
+[2025-12-13 00:07:54] Gemini 분석 결과: 화재 없음
+[2025-12-13 00:08:03] Gemini 분석 결과: 화재 없음
+[2025-12-13 00:08:13] Gemini 분석 결과: 위험, 벽난로에서 장작에 불이 붙었으며, 불길 강도는 매우 강함.
+[2025-12-13 00:08:23] Gemini 분석 결과: 화재 없음
+[2025-12-13 00:08:33] Gemini 분석 결과: 화재 없음
+[2025-12-13 00:10:42] Gemini 분석 결과: 화재 없음
+[2025-12-13 00:10:53] Gemini 분석 결과: 화재 없음
+[2025-12-13 00:11:02] Gemini 분석 결과: 화재 없음
+[2025-12-13 00:11:14] Gemini 분석 결과: 화재 단계: 위험. 발화 위치: 벽난로 내부. 화재 원점: 장작. 불길 강도: 강함.
+[2025-12-13 00:11:23] Gemini 분석 결과: 화재 없음
+[2025-12-13 00:11:34] Gemini 분석 결과: 화재 없음
+[2025-12-13 00:11:43] Gemini 분석 결과: 경고: 벽난로에서 장작이 타고 있으며, 발화 원점은 벽난로 안의 장작이며 불길은 강합니다.
+[2025-12-13 00:11:53] Gemini 분석 결과: 화재 없음
+[2025-12-13 00:12:04] Gemini 분석 결과: 대피. 벽난로 안에서 장작에 불이 붙어 있으며, 불길이 강렬하다.
+[2025-12-13 00:12:13] Gemini 분석 결과: 화재 없음
+[2025-12-13 00:12:21] Gemini 분석 결과: Gemini Analysis Error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash-lite
+Please retry in 38.51810858s. [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+, violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.5-flash-lite"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+  quota_value: 20
+}
+, retry_delay {
+  seconds: 38
+}
+]
+[2025-12-13 00:38:11] Gemini 분석 결과: Gemini Analysis Error: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2025-12-13 00:38:21] Gemini 분석 결과: Gemini Analysis Error: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2025-12-13 00:53:07] Gemini 분석 결과: Gemini Analysis Error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash-lite
+Please retry in 52.527812778s. [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+, violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.5-flash-lite"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+  quota_value: 20
+}
+, retry_delay {
+  seconds: 52
+}
+]
+[2025-12-13 00:55:18] Gemini 분석 결과: 화재 없음
+[2025-12-13 00:55:26] Gemini 분석 결과: 화재 없음
+[2025-12-13 01:49:01] Gemini 분석 결과: 화재 없음
+[2025-12-13 02:13:15] Gemini 분석 결과: 화재 없음.
+[2025-12-13 19:00:29] Gemini 분석 결과: 화재 없음
+[2025-12-13 19:03:09] Gemini 분석 결과: 위험. 주방 가스레인지 위 냄비에서 큰 불길 발생.
+[2025-12-13 19:04:37] Gemini 분석 결과: 화재 단계: 대피. 발화 위치: 주방 좌측. 원점: 가스레인지. 불길 강도: 매우 강하며 주방 전체로 확산 중.
+[2025-12-13 19:09:36] Gemini 분석 결과: 대피. 주방 가스레인지/조리대 발화. 불길 매우 강함. 주방 전체 화재로 즉시 대피 필요.
+[2025-12-13 19:16:20] Gemini 분석 결과: 대피. 발화 위치: 계단 아래 쓰레기통 및 벽면. 원점: 쓰레기통. 불길 매우 강하고 연기 확산 중.
+[2025-12-13 19:16:56] Gemini 분석 결과: 대피. 계단 아래 쓰레기통에서 발화, 불길이 매우 강하고 연기 자욱함.
+[2025-12-13 19:20:43] Gemini 분석 결과: 대피. 계단 옆 재활용 쓰레기통에서 강한 불길 발생, 연기 심각. 즉시 대피 필요.
+[2025-12-13 19:21:12] Gemini 분석 결과: 화재 단계: 대피. 발화 위치는 계단 하단부, 원점은 쓰레기통. 불길이 매우 강하게 치솟고 있어 즉시 대피해야 합니다.
+[2025-12-13 19:21:49] Gemini 분석 결과: 대피. 계단 옆 쓰레기통에서 맹렬한 불길과 다량의 연기 발생. 즉시 대피 요망.
+[2025-12-13 19:38:56] Gemini 분석 결과: 대피 단계. 계단 옆 쓰레기통에서 강한 불길과 연기 발생, 즉시 대피 필요.
+[2025-12-13 19:39:24] Gemini 분석 결과: 대피. 계단 옆 쓰레기통에서 강한 불길 발생.
+[2025-12-13 19:40:02] Gemini 분석 결과: 대피 단계. 발화 위치는 계단 아래 바닥, 원점은 쓰레기통. 불길이 매우 강함.
+[2025-12-13 23:22:36] Gemini 분석 결과: 화재 단계: 위험. 발화 위치: 계단 아래. 화재 원점: 재활용 쓰레기통. 불길 강도: 중간, 연기 많음.
+[2025-12-13 23:23:04] Gemini 분석 결과: 대피. 발화 위치는 계단 옆, 원점은 분리수거함. 불길이 강하며 연기가 많아 즉시 대피 필요.
+[2025-12-13 23:33:20] Gemini 분석 결과: 위험, 조리대 프라이팬에서 강한 불길 발생.
+[2025-12-13 23:33:52] Gemini 분석 결과: 화재 단계: 위험. 발화 위치: 주방 조리대. 화재 원점: 프라이팬. 불길 강도: 강함.
+[2025-12-13 23:53:49] Gemini 분석 결과: 위험. 주방 가스레인지 냄비에서 발화, 불길 매우 강함.
+[2025-12-13 23:54:20] Gemini 분석 결과: 화재 단계: 위험. 발화 위치: 가스레인지 위 냄비. 화재 원점: 냄비 속 내용물. 강한 불길이 관찰됨.
