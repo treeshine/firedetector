@@ -15,5 +15,6 @@ class Video(Base):
     thumbnail_path = Column(String)
     file_path = Column(String)
     file_size = Column(Integer)
+    type = Column(String, default = "BACKUP")
     duration = Column(String)
     created_at = Column(DateTime(), default = func.now())
