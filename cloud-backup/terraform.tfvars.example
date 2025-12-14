@@ -1,3 +1,4 @@
 cloudflare_api_token = "YOUR_API_TOKEN"
 account_id           = "YOUR_ACCOUNT_ID"
-bucket_name          = "YOUR_BLACKBOX_BUCKET_NAME"
+blackbox_bucket_name = "blackbox-bucket"
+fp_bucket_name       = "fp-bucket"
