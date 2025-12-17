@@ -2,15 +2,16 @@
 🔥 화재 감지 시스템 - 메인 진입점
 Multi-Page Streamlit 앱
 """
+
 import streamlit as st
-from utils.helpers import start_receiver_thread, debug_log, check_fire_event
+from helpers import start_receiver_thread, debug_log, check_fire_event
 
 # 페이지 설정
 st.set_page_config(
     page_title="Fire Detection System",
     page_icon="🔥",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
 
 debug_log("========== 메인 홈 페이지 로드 ==========")
@@ -30,8 +31,8 @@ if fire_event:
         st.error(f"""
         ### 🚨 화재 감지 경고! 🚨
         
-        **감지 시간**: {fire_event.get('timestamp', 'N/A')}  
-        **신뢰도**: {fire_event.get('confidence', 'N/A')}  
+        **감지 시간**: {fire_event.get("timestamp", "N/A")}  
+        **신뢰도**: {fire_event.get("confidence", "N/A")}  
         
         ⚠️ 즉시 현장을 확인하고 필요시 119에 신고하세요!
         """)
@@ -50,4 +51,3 @@ st.markdown("""
 st.info("✅ 시스템 준비 완료. 왼쪽 메뉴에서 페이지를 선택하세요.")
 
 debug_log("메인 홈 페이지 로드 완료")
-
