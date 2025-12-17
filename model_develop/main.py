@@ -4,6 +4,7 @@ import time
 import math
 import socket
 import json
+import requests
 from datetime import datetime
 import threading
 from PIL import Image
@@ -14,7 +15,8 @@ import websockets
 # --- 설정 ---
 fire_model = YOLO("fireModel/best.pt")  # 화재 감지 모델 (매 프레임)
 animal_model = YOLO("fireModel/yolov8s.pt")  # 동물 감지 모델
-WEBSOCKET_URI = "ws://localhost:8000/ws/v1"  # 실제 서버 주소로 변경
+WEBSOCKET_URI = "ws://api.chaewoon.work/ws/v1/"  # 실제 서버 주소로 변경
+NOTIFY_API_URL = "http://api.chaewoon.work/api/v1/notify"
 cap = cv2.VideoCapture(0)
 
 ALERT_COOLDOWN = 30
@@ -124,6 +126,18 @@ def send_frame_via_websocket(frame):
     except Exception as e:
         print(f"프레임 인코딩 오류: {e}")
     return False
+
+
+def send_fire_notification():
+    """화재 감지 시 백엔드 서버에 POST 요청"""
+    try:
+        response = requests.post(NOTIFY_API_URL)
+        if response.status_code == 200:
+            print(f"✓ 화재 알림 전송 성공")
+        else:
+            print(f"✗ 화재 알림 전송 실패: {response.status_code}")
+    except Exception as e:
+        print(f"✗ 화재 알림 오류: {e}")
 
 # Gemini 분석을 수행하는 스레드 함수
 def run_gemini_analysis_thread(frame_bgr):
@@ -245,6 +259,9 @@ try:
                         print(f"--- 화재 확정. Gemini 분석 및 모니터링 시작 ---")
                         is_monitoring_fire = True
                         pending_fire_check_time = None
+                        
+                        # 백엔드에 화재 알림 전송
+                        send_fire_notification()
                         
                         # 즉시 Gemini 호출
                         last_gemini_check_time = current_time
