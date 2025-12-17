@@ -17,7 +17,6 @@ class Settings(BaseSettings):
     cf_secret_access_key: str = ""  # Cloudflare Secret Access Key
     r2_blackbox_bucket_name: str = ""  # R2 블랙박스 버킷이름
     r2_fp_bucket_name: str = ""  # R2 오탐데이터 버킷
-    registration_token: str = ""  # FCM 토큰
     # .env파일 매핑하도록 설정
     # 우선순위: 시스템 환경변수 > .env이므로 유의
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")

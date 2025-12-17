@@ -1,14 +1,10 @@
 import logging
 
-from firebase_admin import credentials, messaging
-
+from firebase_admin import messaging
 from src.core.config import settings
-from src.db.models.fcm_data import FCMData
 
 logger = logging.getLogger("app")
 logger.setLevel(settings.log_level)
-
-registration_token = settings.registration_token
 
 
 class FCMService:
@@ -29,14 +25,16 @@ class FCMService:
         try:
             # 모든 토큰 클라이언트들 가져오기
             fcm_datas = self.fcm_repo.getall()
-            # See documentation on defining a message payload.
-            message = messaging.Message(
-                data={
-                    "title": "화재 감지 발생!",
-                    "body": "화재가 감지되었습니다",
-                },
-                token=registration_token,
-            )
-            response = messaging.send(message)
+            for fcm_data in fcm_datas:
+                # See documentation on defining a message payload.
+                message = messaging.Message(
+                    data={
+                        "title": "화재 감지 발생!",
+                        "body": "화재가 감지되었습니다",
+                    },
+                    token=fcm_data.token,
+                )
+                response = messaging.send(message)
+                logger.info(f"response from FCM: {response}")
         except Exception as e:
             raise e
