@@ -2,11 +2,12 @@ import shutil
 from contextlib import asynccontextmanager
 from multiprocessing import Process, Queue, current_process
 
-from fastapi import FastAPI
-from sqlalchemy.orm import sessionmaker
-
+import firebase_admin
 import src.api.v1.api_router as api_router
 import src.api.v1.ws_router as ws_router
+from fastapi import FastAPI
+from firebase_admin import credentials
+from sqlalchemy.orm import sessionmaker
 from src.backup.backup import video_worker
 from src.core.config import settings
 from src.core.logger import clear_uvicorn_logger, new_logger
@@ -29,6 +30,11 @@ async def lifespan(app: FastAPI):
     clear_uvicorn_logger()
     logger = new_logger("app")
     logger.info(f"서버 가동 시작, PID: {current_process().pid}")
+
+    # Firebase 초기화 추가
+    cred = credentials.Certificate("./serviceAccountKey.json")
+    firebase_admin.initialize_app(cred)
+    logger.info("Firebase 초기화 완료")
 
     # DB 연결...
     engine = get_engine()

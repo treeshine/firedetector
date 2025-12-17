@@ -4,10 +4,9 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, Response
 from fastapi.responses import FileResponse, RedirectResponse
 from sqlalchemy import except_
-
 from src.api.v1.deps import get_fcm_service, get_video_service
 from src.core.config import settings
-from src.schemas.fcm import PushRequest, TokenRequest
+from src.schemas.fcm import TokenRequest
 from src.services.fcm_service import FCMService
 from src.services.video_service import VideoService
 
