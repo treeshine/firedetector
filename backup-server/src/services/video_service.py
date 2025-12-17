@@ -145,7 +145,7 @@ class VideoService:
         video_path = os.path.join(settings.data_path, new_video_key)
         thumbnail_path = os.path.join(settings.data_path, new_thumb_key)
         old_video_path = os.path.join(settings.data_path, old_video_key)
-        old_thumb_path = os.path.join(settings.data_path, old_thumb_path)
+        old_thumb_path = os.path.join(settings.data_path, old_thumb_key)
         shutil.copy(old_video_path, video_path)
         shutil.copy(old_thumb_path, thumbnail_path)
         os.remove(old_video_path)
