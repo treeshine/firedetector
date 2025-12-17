@@ -1,5 +1,6 @@
 import logging
 import os
+import shutil
 
 import boto3
 
@@ -143,8 +144,12 @@ class VideoService:
         ) = self.video_repo.transfer_type_to_fp(id)
         video_path = os.path.join(settings.data_path, new_video_key)
         thumbnail_path = os.path.join(settings.data_path, new_thumb_key)
-        os.rename(os.path.join(settings.data_path, old_video_key), video_path)
-        os.rename(os.path.join(settings.data_path, old_thumb_key), thumbnail_path)
+        old_video_path = os.path.join(settings.data_path, old_video_key)
+        old_thumb_path = os.path.join(settings.data_path, old_thumb_path)
+        shutil.copy(old_video_path, video_path)
+        shutil.copy(old_thumb_path, thumbnail_path)
+        os.remove(old_video_path)
+        os.remove(old_thumb_path)
         logger.info(f"비디오 파일명 이름 변경 완료: {old_video_key} -> {new_video_key}")
         logger.info(f"썸네일 파일명 이름 변경 완료: {old_thumb_key} -> {new_thumb_key}")
         if settings.enable_r2:
@@ -159,7 +164,7 @@ class VideoService:
                     )
                 s3.delete_object(
                     Bucket=settings.r2_blackbox_bucket_name,
-                    Key=new_video_key,
+                    Key=old_video_key,
                 )
                 logger.info(f"버킷 이동 완료: {old_video_key} -> {new_video_key}")
 
@@ -173,7 +178,7 @@ class VideoService:
                     )
                 s3.delete_object(
                     Bucket=settings.r2_blackbox_bucket_name,
-                    Key=new_thumb_key,
+                    Key=old_thumb_key,
                 )
                 logger.info(f"버킷 이동 완료: {old_thumb_key} -> {new_thumb_key}")
             except Exception as e:
