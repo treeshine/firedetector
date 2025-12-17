@@ -1,4 +1,6 @@
 import shutil
+import os
+from pathlib import Path
 from contextlib import asynccontextmanager
 from multiprocessing import Process, Queue, current_process
 
@@ -35,6 +37,13 @@ async def lifespan(app: FastAPI):
     cred = credentials.Certificate("./serviceAccountKey.json")
     firebase_admin.initialize_app(cred)
     logger.info("Firebase 초기화 완료")
+
+    # 작업 공간 없으면 만들기..
+    thumbnail_path = Path(os.path.join(settings.data_path, "thumbs"))
+    thumbnail_path.mkdir(parents=True, exist_ok=True)
+
+    video_path = Path(os.path.join(settings.data_path, "videos"))
+    video_path.mkdir(parents=True, exist_ok=True)
 
     # DB 연결...
     engine = get_engine()
