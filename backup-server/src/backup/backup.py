@@ -1,31 +1,34 @@
-from multiprocessing import Queue, current_process
-from queue import Empty
-from datetime import datetime, timedelta
-from sqlalchemy.orm import sessionmaker
-import cv2
-import pytz
-import boto3
-import numpy as np
 import os
 import subprocess
+from datetime import datetime, timedelta
+from multiprocessing import Queue, current_process
+from queue import Empty
 
-from src.db.db import get_engine
-from src.core.logger import new_logger
+import boto3
+import cv2
+import numpy as np
+import pytz
+from sqlalchemy.orm import sessionmaker
+
 from src.core.config import settings
+from src.core.logger import new_logger
 from src.core.signals import VideoChunkEnd
+from src.db.db import get_engine
 from src.db.models.video import Video
 
 timezone = pytz.timezone(settings.tz)
 workdir = os.path.join(settings.data_path)
 
 # R2 API 세팅
-s3 = boto3.client(
-    's3',
-    endpoint_url=f'https://{settings.cf_account_id}.r2.cloudflarestorage.com',
-    aws_access_key_id=settings.cf_access_key_id,
-    aws_secret_access_key=settings.cf_secret_access_key,
-    region_name='auto'
-)
+if settings.enable_r2:
+    s3 = boto3.client(
+        "s3",
+        endpoint_url=f"https://{settings.cf_account_id}.r2.cloudflarestorage.com",
+        aws_access_key_id=settings.cf_access_key_id,
+        aws_secret_access_key=settings.cf_secret_access_key,
+        region_name="auto",
+    )
+
 
 def video_worker(queue: Queue):
     """
@@ -35,7 +38,7 @@ def video_worker(queue: Queue):
     engine = get_engine()
     SessionLocal = sessionmaker(bind=engine)
     logger.info(f"가동 시작, PID: {current_process().pid}")
-    
+
     try:
         while True:
             first = True
@@ -43,13 +46,15 @@ def video_worker(queue: Queue):
             while True:
                 try:
                     # 타임아웃 주입하여 중간에 시간 체크
-                    raw = queue.get(timeout=0.1) 
+                    raw = queue.get(timeout=0.1)
                 except Empty:
                     # 시간이 초과시, 이번 영상은 종료
-                    if start_time is not None and datetime.now(timezone) >= start_time + timedelta(seconds=30):
+                    if start_time is not None and datetime.now(
+                        timezone
+                    ) >= start_time + timedelta(seconds=30):
                         break
                     continue
-            
+
                 # SIGINT 핸들링(main.py 참고)
                 if raw is None:
                     logger.info("종료 신호 수신")
@@ -65,36 +70,38 @@ def video_worker(queue: Queue):
                 if img is None:
                     logger.error("이미지 디코딩 실패")
                     continue
-            
+
                 # 첫 이미지 발견 시, 타임스탬프 남기기
                 if first:
                     start_time = datetime.now(timezone)
                     pure_name = start_time.strftime("%Y%m%d%H%M%S")
                     video_key = f"videos/blackbox-backup-{pure_name}.mp4"
-                    
+
                     # 임시 파일 (AVI)
                     temp_video_path = os.path.join(workdir, f"temp_{pure_name}.avi")
                     final_video_path = os.path.join(workdir, video_key)
-                    
+
                     height, width, _ = img.shape
-                    
-                    # 임시로 AVI 저장 
+
+                    # 임시로 AVI 저장
                     video = cv2.VideoWriter(
                         temp_video_path,
-                        cv2.VideoWriter_fourcc(*"MJPG"),  # Motion JPEG 
+                        cv2.VideoWriter_fourcc(*"MJPG"),  # Motion JPEG
                         30,
-                        (width, height)
+                        (width, height),
                     )
-                    
+
                     if not video.isOpened():
                         logger.error("VideoWriter 초기화 실패!")
                         continue
-                        
+
                     first = False
                     frame_written = 0
 
                 # 영상 최대길이 초과 시, 중단
-                if datetime.now(timezone) >= start_time + timedelta(seconds=settings.max_video_len):
+                if datetime.now(timezone) >= start_time + timedelta(
+                    seconds=settings.max_video_len
+                ):
                     break
 
                 # 프레임 추가 및 카운트 증가
@@ -103,10 +110,17 @@ def video_worker(queue: Queue):
 
             # 비디오 저장 및 업로드
             flush_video(
-                pure_name, video, final_video_path, temp_video_path, 
-                video_key, img, frame_written, SessionLocal, logger
+                pure_name,
+                video,
+                final_video_path,
+                temp_video_path,
+                video_key,
+                img,
+                frame_written,
+                SessionLocal,
+                logger,
             )
-            
+
     # SIGINT stacktrace 방지
     except KeyboardInterrupt:
         pass
@@ -114,13 +128,21 @@ def video_worker(queue: Queue):
         try:
             # 혹시 찍던게 있으면 마저 저장..
             flush_video(
-                pure_name, video, final_video_path, temp_video_path,
-                video_key, img, frame_written, SessionLocal, logger
+                pure_name,
+                video,
+                final_video_path,
+                temp_video_path,
+                video_key,
+                img,
+                frame_written,
+                SessionLocal,
+                logger,
             )
         except Exception:
             logger.warning("아무 video도 저장한 적 없음..")
         finally:
             logger.info("종료..")
+
 
 def convert_to_h264(input_path, output_path, logger):
     """
@@ -128,30 +150,32 @@ def convert_to_h264(input_path, output_path, logger):
     """
     try:
         command = [
-            'ffmpeg',
-            '-i', input_path,
-            '-c:v', 'libx264',
-            '-preset', 'ultrafast',  # 빠른 인코딩
-            '-crf', '23',
-            '-movflags', '+faststart',  # 스트리밍 최적화
-            '-y',
-            output_path
+            "ffmpeg",
+            "-i",
+            input_path,
+            "-c:v",
+            "libx264",
+            "-preset",
+            "ultrafast",  # 빠른 인코딩
+            "-crf",
+            "23",
+            "-movflags",
+            "+faststart",  # 스트리밍 최적화
+            "-y",
+            output_path,
         ]
-        
+
         result = subprocess.run(
-            command,
-            capture_output=True,
-            text=True,
-            timeout=30  # 30초 타임아웃
+            command, capture_output=True, text=True, timeout=30  # 30초 타임아웃
         )
-        
+
         if result.returncode == 0:
             logger.info(f"ffmpeg 변환 성공: {output_path}")
             return True
         else:
             logger.error(f"ffmpeg 변환 실패: {result.stderr}")
             return False
-            
+
     except FileNotFoundError:
         logger.error("ffmpeg가 설치되지 않음!")
         return False
@@ -162,7 +186,18 @@ def convert_to_h264(input_path, output_path, logger):
         logger.error(f"ffmpeg 에러: {e}")
         return False
 
-def flush_video(pure_name, video, final_video_path, temp_video_path, video_key, img, frame_written, SessionLocal, logger):
+
+def flush_video(
+    pure_name,
+    video,
+    final_video_path,
+    temp_video_path,
+    video_key,
+    img,
+    frame_written,
+    SessionLocal,
+    logger,
+):
     """
     영상 파일 Flush(로컬 저장 + 클라우드 업로드)
     """
@@ -170,15 +205,15 @@ def flush_video(pure_name, video, final_video_path, temp_video_path, video_key, 
         logger.info("데이터 저장 시도..")
         duration_seconds = frame_written / 30
         video_time = timedelta(seconds=int(round(duration_seconds)))
-        
+
         # 1. OpenCV 비디오 저장
         video.release()
         logger.info(f"임시 비디오 저장: {temp_video_path}")
-        
+
         # 2. ffmpeg로 H.264 변환
         logger.info("브라우저 호환 형식으로 변환 중...")
         conversion_success = convert_to_h264(temp_video_path, final_video_path, logger)
-        
+
         if conversion_success:
             # 변환 성공 - 임시 파일 삭제
             try:
@@ -195,7 +230,7 @@ def flush_video(pure_name, video, final_video_path, temp_video_path, video_key, 
             except:
                 logger.error("파일 이동 실패")
                 return
-        
+
         # 3. 썸네일 저장
         thumb_key = f"thumbs/blackbox-thumb-{pure_name}.jpeg"
         thumbnail_path = os.path.join(workdir, thumb_key)
@@ -209,17 +244,17 @@ def flush_video(pure_name, video, final_video_path, temp_video_path, video_key, 
                     s3.put_object(
                         Bucket=settings.r2_blackbox_bucket_name,
                         Body=f,
-                        ContentType='video/mp4',
+                        ContentType="video/mp4",
                         Key=video_key,
                     )
                 logger.info(f"영상 업로드 완료: {video_key}")
-                
+
                 with open(thumbnail_path, "rb") as f:
                     s3.put_object(
                         Bucket=settings.r2_blackbox_bucket_name,
                         Body=f,
                         Key=thumb_key,
-                        ContentType='image/jpeg',
+                        ContentType="image/jpeg",
                     )
                 logger.info(f"썸네일 업로드 완료: {thumb_key}")
             except Exception as e:
@@ -230,11 +265,11 @@ def flush_video(pure_name, video, final_video_path, temp_video_path, video_key, 
         try:
             with SessionLocal() as s:
                 new_video = Video(
-                    name = "[Backup] " + pure_name,
-                    thumbnail_path = thumb_key,
-                    file_path = video_key,
-                    file_size = f"{(float(os.path.getsize(final_video_path)) / (1024*1024)):.2f} MB", 
-                    duration = str(video_time)
+                    name="[Backup] " + pure_name,
+                    thumbnail_path=thumb_key,
+                    file_path=video_key,
+                    file_size=f"{(float(os.path.getsize(final_video_path)) / (1024*1024)):.2f} MB",
+                    duration=str(video_time),
                 )
                 s.add(new_video)
                 s.commit()

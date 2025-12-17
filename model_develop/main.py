@@ -8,10 +8,13 @@ from datetime import datetime
 import threading
 from PIL import Image
 from gemini_analyzer import analyze_frame_with_gemini
+import asyncio
+import websockets
 
 # --- 설정 ---
 fire_model = YOLO("fireModel/best.pt")  # 화재 감지 모델 (매 프레임)
 animal_model = YOLO("fireModel/yolov8s.pt")  # 동물 감지 모델
+WEBSOCKET_URI = "ws://localhost:8000/ws/v1"  # 실제 서버 주소로 변경
 cap = cv2.VideoCapture(0)
 
 ALERT_COOLDOWN = 30
@@ -49,6 +52,78 @@ print(f"동물 감지 모델 클래스: {ANIMAL_CLASSES}")
 print(f"성능 최적화: 매 {ANIMAL_DETECTION_SKIP}프레임마다 동물 감지")
 print(f"Gemini 분석: 매 {GEMINI_CHECK_INTERVAL}초마다 실행")
 print("--- 실시간 화재 + 동물 감지를 시작합니다 ---")
+
+# === WebSocket 관련 함수 ===
+async def websocket_sender(frame_queue: asyncio.Queue):
+    """WebSocket으로 프레임을 전송하는 비동기 함수"""
+    global websocket_connection, websocket_connected
+    
+    while True:
+        try:
+            async with websockets.connect(WEBSOCKET_URI) as ws:
+                websocket_connection = ws
+                websocket_connected = True
+                print(f"✓ WebSocket 연결됨: {WEBSOCKET_URI}")
+                
+                while True:
+                    # 큐에서 프레임 데이터 가져오기
+                    frame_data = await frame_queue.get()
+                    if frame_data is None:  # 종료 신호
+                        break
+                    
+                    try:
+                        await ws.send(frame_data)
+                    except websockets.exceptions.ConnectionClosed:
+                        print("WebSocket 연결이 닫혔습니다. 재연결 시도...")
+                        websocket_connected = False
+                        break
+                        
+        except (websockets.exceptions.ConnectionClosedError, 
+                websockets.exceptions.InvalidStatusCode,
+                ConnectionRefusedError,
+                OSError) as e:
+            websocket_connected = False
+            print(f"WebSocket 연결 실패: {e}. 3초 후 재연결...")
+            await asyncio.sleep(3)
+        except Exception as e:
+            websocket_connected = False
+            print(f"WebSocket 오류: {e}")
+            await asyncio.sleep(3)
+
+
+def run_websocket_thread(frame_queue: asyncio.Queue, loop: asyncio.AbstractEventLoop):
+    """별도 스레드에서 WebSocket 이벤트 루프 실행"""
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(websocket_sender(frame_queue))
+
+
+# WebSocket용 asyncio 이벤트 루프와 큐 생성
+websocket_loop = asyncio.new_event_loop()
+frame_queue = asyncio.Queue()
+
+# WebSocket 스레드 시작
+websocket_thread = threading.Thread(
+    target=run_websocket_thread,
+    args=(frame_queue, websocket_loop),
+    daemon=True
+)
+websocket_thread.start()
+
+
+def send_frame_via_websocket(frame):
+    """프레임을 WebSocket 큐에 추가"""
+    try:
+        # JPEG로 압축
+        ret_encode, frame_encoded = cv2.imencode(
+            '.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
+        if ret_encode:
+            data = frame_encoded.tobytes()
+            # 스레드 안전하게 큐에 추가
+            websocket_loop.call_soon_threadsafe(frame_queue.put_nowait, data)
+            return True
+    except Exception as e:
+        print(f"프레임 인코딩 오류: {e}")
+    return False
 
 # Gemini 분석을 수행하는 스레드 함수
 def run_gemini_analysis_thread(frame_bgr):
@@ -235,6 +310,9 @@ try:
             except Exception as e:
                 print(f"송신 오류: {e}")
                 client_socket = None
+        
+        if websocket_connected:
+            send_frame_via_websocket(frame)
 
         # 5. 화재 감지 여부 및 알림 로직
         current_time = time.time()

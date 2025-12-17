@@ -1,27 +1,29 @@
+import atexit
 import json
 import logging
-import atexit
 
 from src.core.config import settings
+
 
 class JsonFormatter(logging.Formatter):
     """
     커스텀 JSON 포매터 생성
     레벨, 메시지, 시간, 코드 모듈 및 라인 등의 정보 제공.
     """
+
     def format(self, record):
         json_record = {
             "level": record.levelname,
             "message": f"[{record.name.upper()}] {record.getMessage()}",
             "time": self.formatTime(record, "%Y-%m-%d %H:%M:%S"),
             "module": record.module,
-            "line": record.lineno
+            "line": record.lineno,
         }
-        
+
         # 예외처리 stacktrace제공
         if record.exc_info:
             json_record["exception"] = self.formatException(record.exc_info)
-        
+
         # 한글로그도 관용
         return json.dumps(json_record, ensure_ascii=False)
 
@@ -44,6 +46,7 @@ def new_logger(name):
 
     return logger
 
+
 def clear_uvicorn_logger():
     """
     uvicorn 기본 로깅 제거
@@ -52,3 +55,4 @@ def clear_uvicorn_logger():
     logging.getLogger("uvicorn.access").propagate = False
     logging.getLogger("uvicorn.error").disabled = True
     logging.getLogger("uvicorn.error").propagate = False
+

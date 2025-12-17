@@ -1,7 +1,8 @@
 import logging
-
 from multiprocessing import Queue
+
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+
 from src.core.config import settings
 from src.core.signals import VideoChunkEnd
 

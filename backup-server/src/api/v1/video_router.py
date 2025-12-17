@@ -1,11 +1,12 @@
 import logging
 from datetime import datetime
+
 from fastapi import APIRouter, Depends, Response
 from fastapi.responses import FileResponse, RedirectResponse
 
 from src.api.v1.deps import get_video_service
-from src.services.video_service import VideoService
 from src.core.config import settings
+from src.services.video_service import VideoService
 
 ##############################
 # Video 메타데이터 REST API 영역 #
@@ -16,12 +17,14 @@ logger.setLevel(settings.log_level)
 
 router = APIRouter(prefix="/api/v1", tags=["stream"])
 
+
 @router.get("/videos/backup")
 def get_backup_videos(video_service: VideoService = Depends(get_video_service)):
     return video_service.get_backup_video_list()
 
+
 @router.get("/thumbnail/backup/{id}")
-def read_fp_thumbnail(id, video_service: VideoService = Depends(get_video_service)):
+def read_backup_thumbnail(id, video_service: VideoService = Depends(get_video_service)):
     """
     썸네일 이미지 불러오기
     """
@@ -38,6 +41,7 @@ def read_fp_thumbnail(id, video_service: VideoService = Depends(get_video_servic
     except Exception as e:
         logger.error(f"File fetch error {e}")
 
+
 @router.get("/videos/backup/{id}")
 def read_backup_video(id, video_service: VideoService = Depends(get_video_service)):
     """
@@ -46,9 +50,7 @@ def read_backup_video(id, video_service: VideoService = Depends(get_video_servic
     try:
         res = video_service.get_backup_video_path(id)
         if settings.enable_r2:
-            return RedirectResponse(
-                url=res
-            )
+            return RedirectResponse(url=res)
         else:
             return FileResponse(
                 path=res,
@@ -57,12 +59,14 @@ def read_backup_video(id, video_service: VideoService = Depends(get_video_servic
     except Exception as e:
         logger.error(f"File fetch error {e}")
 
+
 @router.get("/videos/fp")
 def get_fp_videos(video_service: VideoService = Depends(get_video_service)):
     """
     오탐 영상목록 불러오기
     """
     return video_service.get_fp_video_list()
+
 
 @router.get("/thumbnail/fp/{id}")
 def read_fp_thumbnail(id, video_service: VideoService = Depends(get_video_service)):
@@ -81,6 +85,7 @@ def read_fp_thumbnail(id, video_service: VideoService = Depends(get_video_servic
     except Exception as e:
         logger.error(f"File fetch error {e}")
 
+
 @router.get("/videos/fp/{id}")
 def read_fp_video(id, video_service: VideoService = Depends(get_video_service)):
     """
@@ -89,9 +94,7 @@ def read_fp_video(id, video_service: VideoService = Depends(get_video_service)):
     try:
         res = video_service.get_fp_video_path(id)
         if settings.enable_r2:
-            return RedirectResponse(
-                url=res
-            )
+            return RedirectResponse(url=res)
         else:
             return FileResponse(
                 path=res,
@@ -101,6 +104,7 @@ def read_fp_video(id, video_service: VideoService = Depends(get_video_service)):
         logger.error(f"파일을 불러오는 중 에러 발생: {e}")
         raise e
 
+
 @router.post("/fpreport/{id}")
 def fp_report(id, video_service: VideoService = Depends(get_video_service)):
     """
@@ -108,9 +112,8 @@ def fp_report(id, video_service: VideoService = Depends(get_video_service)):
     """
     try:
         video_service.single_fp_report(id)
-        return Response(
-            status_code=204
-        )
+        return Response(status_code=204)
     except Exception as e:
         logger.error(f"에러 발생: {e}")
         raise e
+

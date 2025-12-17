@@ -1,8 +1,9 @@
 {
   "event_type": "animal_detected",
-  "timestamp": "2025-12-13T23:54:26.184912",
-  "unix_timestamp": 1765637666.1845944,
+  "timestamp": "2025-12-17T17:09:15.391392",
+  "unix_timestamp": 1765958955.391306,
   "detected_animals": [
+    "person",
     "person"
   ],
   "message": "🐾 person이(가) 감지되었습니다!"
