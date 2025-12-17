@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "201435888572",
+    "project_id": "fire-detector-b23b4",
+    "storage_bucket": "fire-detector-b23b4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:201435888572:android:3212651f1f8af7000fc9b9",
+        "android_client_info": {
+          "package_name": "com.hallymUniv.fire_detector"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAb0hzBVnfRv9koaq-wZbPuJRaAaUA_Xe8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
