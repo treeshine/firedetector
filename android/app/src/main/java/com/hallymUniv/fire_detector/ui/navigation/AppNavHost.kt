@@ -10,15 +10,12 @@ import com.hallymUniv.fire_detector.data.UrlDataStore
 import com.hallymUniv.fire_detector.ui.dashboard.DashboardScreen
 import com.hallymUniv.fire_detector.ui.setup.UrlSetupScreen
 import com.hallymUniv.fire_detector.ui.splash.SplashScreen
-import com.hallymUniv.fire_detector.ui.alarm.AlarmScreen
-import com.hallymUniv.fire_detector.ui.alarm.AlarmItem
 import kotlinx.coroutines.launch
 
 sealed class Route(val route: String) {
     object Splash : Route("splash")
     object Setup : Route("setup")
     object Dashboard : Route("dashboard")
-    object  Alarm : Route("alarm")
 }
 
 @Composable
@@ -78,34 +75,8 @@ fun AppNavHost(
         composable(Route.Dashboard.route) {
             DashboardScreen(
                 dashboardUrl = savedUrl ?: "",
-                onAlarmClick = {
-                    navController.navigate(Route.Alarm.route)
-                },
                 onSettingClick = {
                     navController.navigate(Route.Setup.route)
-                }
-            )
-        }
-
-        // Alarm 화면
-        composable(Route.Alarm.route) {
-            // 지금은 더미 데이터
-            val alarms = listOf(
-                AlarmItem(
-                    id = 1,
-                    title = "화재 감지",
-                    message = "화재가 감지되었습니다.",
-                    time = "2024-12-12 14:23"
-                )
-            )
-
-            AlarmScreen(
-                alarms = alarms,
-                onClose = { navController.popBackStack() },
-                onAlarmClick = {
-                    navController.navigate(Route.Dashboard.route) {
-                        popUpTo(Route.Alarm.route) { inclusive = true }
-                    }
                 }
             )
         }

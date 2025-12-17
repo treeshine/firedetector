@@ -1,15 +1,14 @@
 package com.hallymUniv.fire_detector
 
-import com.google.firebase.messaging.FirebaseMessaging
-import android.util.Log
 import android.Manifest
-import android.os.Bundle
-import android.os.Build
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.content.ContextCompat
 import android.content.pm.PackageManager
+import android.os.Build
+import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import com.hallymUniv.fire_detector.fcm.NotificationUtil
 import com.hallymUniv.fire_detector.ui.navigation.AppNavHost
 import com.hallymUniv.fire_detector.ui.theme.Fire_detectorTheme
 
@@ -30,15 +29,7 @@ class MainActivity : ComponentActivity() {
 
         askNotificationPermission()
 
-        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
-            if (!task.isSuccessful) {
-                Log.w("FCM", "Fetching FCM token failed", task.exception)
-                return@addOnCompleteListener
-            }
-
-            val token = task.result
-            Log.d("FCM", "FCM Token = $token")
-        }
+        NotificationUtil.createChannel(this)
 
         setContent {
             Fire_detectorTheme {
