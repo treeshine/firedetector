@@ -22,10 +22,9 @@ class FCMService:
             raise e
 
     def notify_client(self):
-        try:
-            # 모든 토큰 클라이언트들 가져오기
-            fcm_datas = self.fcm_repo.getall()
-            for fcm_data in fcm_datas:
+        fcm_datas = self.fcm_repo.getall()
+        for fcm_data in fcm_datas:
+            try:  # ✅ for문 안으로 이동
                 message = messaging.Message(
                     notification=messaging.Notification(
                         title="화재 감지 발생!", body="화재가 감지되었습니다."
@@ -34,6 +33,6 @@ class FCMService:
                 )
                 response = messaging.send(message)
                 logger.info(f"response from FCM: {response}")
-
-        except Exception as e:
-            logger.warning(f"푸시 알림 보내기 실패: {e}")
+            except Exception as e:
+                logger.warning(f"푸시 알림 보내기 실패 (token: {fcm_data.token}): {e}")
+                continue  # 실패해도 다음 토큰으로 계속 진행
