@@ -1,26 +1,22 @@
 """
-대시보드 페이지 (State Machine 기반 화재 감지)
-- State Machine (Rising/Falling Edge 감지)으로 정확한 이벤트 카운트
-- 두 개의 시계: 큰 시계(지속 시간), 작은 시계(마지막 감지 T- 형태)
-- threshold 10초로 증가: YOLO 감지 끊김 방지
-- T- 형태: 마지막 감지 시각과 경과 시간 표시
+대시보드 페이지 (TCP 기반 메트릭 수신)
+- 파일 기반 → TCP 기반으로 변경
+- helpers.py의 get_latest_* 함수 사용
 """
 
+import streamlit as st
 import queue
 import time
 from datetime import datetime
-
-import streamlit as st
-
 from helpers import (
-    connection_status,
-    debug_log,
     frame_queue,
-    get_latest_animal_event,
+    connection_status,
+    start_receiver_thread,
+    debug_log,
     get_latest_fire_event,
+    get_latest_animal_event,
     get_latest_gemini_result,
     is_fire_active,
-    start_receiver_thread,
 )
 
 st.set_page_config(page_title="Fire Dashboard", layout="wide")
@@ -97,6 +93,20 @@ while True:
     animal_data = get_latest_animal_event()
     gemini_data = get_latest_gemini_result()
 
+    # B. Gemini 결과 표시
+    if gemini_data:
+        timestamp = gemini_data.get("timestamp", "")
+        result = gemini_data.get("result", "")
+        try:
+            ts_dt = datetime.fromisoformat(timestamp)
+            if ts_dt > st.session_state["app_start_time"]:
+                ts_str = ts_dt.strftime("%Y-%m-%d %H:%M:%S")
+                gemini_metric.markdown(f"**[{ts_str}]**\n\n{result}")
+        except:
+            gemini_metric.markdown(f"{result}")
+    else:
+        gemini_metric.markdown("**마지막 탐색 시간: -**\n\n시스템 가동됨")
+
     # C. 동물 감지 표시
     if animal_data:
         animals = animal_data.get("detected_animals", [])
@@ -126,7 +136,9 @@ while True:
         fire_start_time = None
         fire_end_time = now
         alert_placeholder.empty()
-        duration_metric.metric(label="현재 지속 시간", value="00:00:00", delta_color="off")
+        duration_metric.metric(
+            label="현재 지속 시간", value="00:00:00", delta_color="off"
+        )
         debug_log("✅ 화재 종료. 카운다운 시작")
 
     # E. Falling Edge 카운다운 상태
@@ -159,7 +171,9 @@ while True:
             elapsed_str = str(elapsed).split(".")[0]
             if len(elapsed_str) == 7:
                 elapsed_str = "0" + elapsed_str
-            duration_metric.metric(label="🔥 화재 지속 중", value=elapsed_str, delta="DANGER")
+            duration_metric.metric(
+                label="🔥 화재 지속 중", value=elapsed_str, delta="DANGER"
+            )
 
         # 2. 작은 시계 (T- 형태)
         if event_data:
@@ -178,7 +192,9 @@ while True:
         # 3. 상태 표시
         status_indicator.error("🚨 화재 발생 (DANGER)")
         with alert_placeholder.container():
-            st.error(f"🚨 **화재 감지됨!** (신뢰도: {event_data.get('confidence', 0):.2f})")
+            st.error(
+                f"🚨 **화재 감지됨!** (신뢰도: {event_data.get('confidence', 0):.2f})"
+            )
 
     # G. 공통 업데이트
     freq_metric.metric(label="누적 감지 횟수", value=f"{daily_fire_count} 회")
