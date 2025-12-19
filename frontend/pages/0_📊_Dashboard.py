@@ -1,4 +1,4 @@
- """
+"""
 대시보드 페이지 (TCP 기반 메트릭 수신)
 - 파일 기반 → TCP 기반으로 변경
 - helpers.py의 get_latest_* 함수 사용
@@ -105,9 +105,25 @@ while True:
         except:
             gemini_metric.markdown(f"{result}")
     else:
-        gemini_metric.markdown("**마지막 탐색 시간: -**\n\n시스템 가동됨")   
+        gemini_metric.markdown("**마지막 탐색 시간: -**\n\n시스템 가동됨")
 
-    # B. 상태 머신 (State Machine)
+    # C. 동물 감지 표시
+    if animal_data:
+        animals = animal_data.get("detected_animals", [])
+        timestamp = animal_data.get("timestamp", "")
+        if animals:
+            animal_list = ", ".join(set(animals))
+            try:
+                ts_dt = datetime.fromisoformat(timestamp)
+                ts_str = ts_dt.strftime("%H:%M:%S")
+                animal_metric.markdown(f"**{animal_list}** (마지막: {ts_str})")
+            except:
+                animal_metric.markdown(f"**{animal_list}**")
+    else:
+        animal_metric.markdown("감지된 동물 없음")
+
+    # D. 화재 상태 확인 (threshold 10초)
+    current_active = is_fire_active(event_data, threshold_seconds=10)
 
     # [Rising Edge] 화재 시작
     if current_active and not was_fire_active:
@@ -115,30 +131,27 @@ while True:
         daily_fire_count += 1
         debug_log("🔥 화재 시작! 타이머 가동")
 
-    # [Falling Edge] 화재 종료 (현재 비활성 & 이전 활성)
+    # [Falling Edge] 화재 종료
     if not current_active and was_fire_active:
         fire_start_time = None
-        fire_end_time = now  # ← 종료 시각 기록
+        fire_end_time = now
         alert_placeholder.empty()
         duration_metric.metric(
             label="현재 지속 시간", value="00:00:00", delta_color="off"
         )
-        # 마지막 감지 시간은 보존 (업데이트하지 않음)
         debug_log("✅ 화재 종료. 카운다운 시작")
 
-    # C. Falling Edge 카운다운 상태 (화재 사라졌지만 10초 유지)
+    # E. Falling Edge 카운다운 상태
     elif not current_active and fire_end_time is not None:
         fallback_elapsed = (now - fire_end_time).total_seconds()
 
         if fallback_elapsed < FALLBACK_DURATION:
-            # 카운다운 중 (10초 ~ 0초)
             countdown_sec = int(FALLBACK_DURATION - fallback_elapsed)
             status_indicator.warning(f"🟡 화재 감소됨 (T - {countdown_sec}s)")
             duration_metric.metric(
                 label="카운다운", value=f"T - {countdown_sec}s", delta="감소 중"
             )
         else:
-            # 카운다운 완료 → 정상 상태
             fire_end_time = None
             status_indicator.success("정상 (Safe)")
             duration_metric.metric(
@@ -147,43 +160,32 @@ while True:
             debug_log("✅ 카운다운 완료. 정상 상태 복귀")
 
     else:
-        # 정상 상태 (이벤트 없음)
-        status_indicator.success("정상 (Safe)")
+        if not current_active:
+            status_indicator.success("정상 (Safe)")
 
-    # D. UI 업데이트 (화재 상태일 때)
+    # F. UI 업데이트 (화재 상태일 때)
     if current_active:
         # 1. 큰 시계 (지속 시간)
         if fire_start_time:
             elapsed = now - fire_start_time
-            # 마이크로초 제거하여 깔끔하게 표시 (0:00:12)
             elapsed_str = str(elapsed).split(".")[0]
-            # 0으로 시작하면 00으로 패딩 (선택 사항)
             if len(elapsed_str) == 7:
                 elapsed_str = "0" + elapsed_str
             duration_metric.metric(
                 label="🔥 화재 지속 중", value=elapsed_str, delta="DANGER"
             )
 
-        # 2. 작은 시계 (T- 형태 적용)
+        # 2. 작은 시계 (T- 형태)
         if event_data:
             ts = event_data.get("timestamp", "")
             try:
-                # ISO 포맷 파싱
                 event_dt = datetime.fromisoformat(ts)
-
-                # 절대 시간 (예: 12:34:56)
                 abs_time = event_dt.strftime("%H:%M:%S")
-
-                # 상대 시간 차이 계산 (현재 - 감지시각)
                 diff = now - event_dt
                 diff_sec = int(diff.total_seconds())
-
-                # [수정된 부분] "시간 (T - 초)" 형태로 표시
                 display_text = f"**🕒 마지막 감지:** {abs_time} (T - {diff_sec}s)"
                 last_detect_text.markdown(display_text)
-
             except Exception as e:
-                # 파싱 실패 시 원본 표시
                 debug_log(f"시간 파싱 오류: {e}")
                 last_detect_text.caption(f"마지막 감지: {ts}")
 
@@ -194,19 +196,17 @@ while True:
                 f"🚨 **화재 감지됨!** (신뢰도: {event_data.get('confidence', 0):.2f})"
             )
 
-    # E. 공통 업데이트
+    # G. 공통 업데이트
     freq_metric.metric(label="누적 감지 횟수", value=f"{daily_fire_count} 회")
     was_fire_active = current_active
 
-    # F. 카메라 프레임 업데이트
+    # H. 카메라 프레임 업데이트
     try:
         frame = frame_queue.get(timeout=0.1)
-        camera_placeholder.image(frame, width="stretch")
+        camera_placeholder.image(frame, use_container_width=True)
         connection_info.info(f"연결 상태: {connection_status['status']}")
 
         frame_count += 1
-        if frame_count % 30 == 0:
-            pass
 
     except queue.Empty:
         pass
