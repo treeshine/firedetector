@@ -2,6 +2,7 @@
 설정 페이지
 """
 
+import os
 import streamlit as st
 from helpers import start_receiver_thread, debug_log
 
@@ -26,10 +27,9 @@ st.markdown("---")
 
 # 시스템 정보
 st.subheader("ℹ️ 시스템 정보")
-st.info("""
-- **백엔드**: main.py (YOLO 화재 감지)
-- **호스트**: localhost:5005
-- **상태**: 실시간 모니터링 중
+st.info(f"""
+- **백엔드**: YOLO 화재 감지, FastAPI 백업 서버
+- **호스트**: {os.getenv("YOLO_SERVER")}(YOLO), {os.getenv("FASTAPI_SERVER")}(FastAPI)
 """)
 
 st.markdown("---")

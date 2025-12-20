@@ -14,7 +14,7 @@ from datetime import datetime
 # ============================================
 API_BASE_URL = st.sidebar.text_input(
     "🔗 API 서버 주소",
-    value="http://api.chaewoon.work/api/v1",
+    value="http://<FASTAPI_SERVER>/api/v1",
     help="FastAPI 서버 주소를 입력하세요"
 )
 

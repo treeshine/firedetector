@@ -22,13 +22,14 @@ protobuf==6.33.2
 pyarrow==22.0.0
 pydeck==0.9.1
 python-dateutil==2.9.0.post0
+python-dotenv==1.2.1
 pytz==2025.2
 referencing==0.37.0
 requests==2.32.5
 rpds-py==0.30.0
 six==1.17.0
 smmap==5.0.2
-streamlit==1.52.1
+streamlit==1.52.2
 tenacity==9.1.2
 toml==0.10.2
 tornado==6.5.4
