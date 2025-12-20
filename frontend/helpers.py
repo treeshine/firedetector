@@ -27,7 +27,7 @@ MSG_TYPE_ANIMAL_EVENT = 0x03
 MSG_TYPE_GEMINI_RESULT = 0x04
 
 # 전역 설정
-HOST = "localhost"
+HOST = os.getenv("YOLO_SERVER")
 PORT = 5005
 QUEUE_SIZE = 2
 FIRE_ACTIVE_THRESHOLD = 30  # 화재 활성 판정 임계값 (초)

@@ -1,4 +1,5 @@
 import asyncio
+import os
 import json
 import math
 import socket
@@ -18,8 +19,8 @@ from gemini_analyzer import analyze_frame_with_gemini
 # --- 설정 ---
 fire_model = YOLO("fireModel/best.pt")  # 화재 감지 모델 (매 프레임)
 animal_model = YOLO("fireModel/yolov8s.pt")  # 동물 감지 모델
-WEBSOCKET_URI = "ws://api.chaewoon.work/ws/v1/"  # 실제 서버 주소로 변경
-NOTIFY_API_URL = "http://api.chaewoon.work/api/v1/notify"
+WEBSOCKET_URI = f"ws://{os.getenv("FASTAPI_SERVER")}/ws/v1/"  # 실제 서버 주소로 변경
+NOTIFY_API_URL = f"http://{os.getenv("FASTAPI_SERVER")}/api/v1/notify"
 cap = cv2.VideoCapture(0)
 
 ALERT_COOLDOWN = 30
@@ -215,7 +216,7 @@ def run_gemini_analysis_thread(frame_bgr):
         print(f"Gemini 스레드 오류: {e}")
 
 # 송신할 소켓 서버 설정
-HOST = 'localhost'
+HOST = os.getenv("BIND_ADDRESS")
 PORT = 5005
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
