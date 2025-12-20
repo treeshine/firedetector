@@ -71,5 +71,5 @@ tofu apply # 클라우드 자원을 현재 선언대로 동기화 -auto-approve 
 이후, 나머지는 아래 명령으로 제거하면 됩니다.
 
 ```bash
-tofu destroy # 선언되 자원 제거. -auto-approve 옵션으로 자동 승인
+tofu destroy # 선언된 자원 제거. -auto-approve 옵션으로 자동 승인
 ```
