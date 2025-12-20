@@ -40,12 +40,16 @@ R2_FP_BUCKET_NAME=fp-bucket                      # 오탐데이터 버킷명
 
 > [!WARNING]
 > **`.env`파일은 시스템 환경변수보다 더 낮은 우선순위를 가집니다.**   
-> [`src/core/config`에 구성된 기본값] < [`.env`] < [시스템 환경변수] 덮어씌워진다고 이해하시면 됩니다.   
+> [`src/core/config`에 구성된 기본값] < [`.env`] < [시스템 환경변수]의 우선순위를 가지며, 더 높은 우선순위의 항목이 이전 값들을 덮어씌운다고 이해하시면 됩니다.   
 > 참고: [Pydantic Official Document](https://docs.pydantic.dev/latest/concepts/pydantic_settings/#dotenv-env-support)
+
+## FCM ServiceAccount 받아오기
+`main.py`와 같은 디렉토리에서 FCM의 서버 serviceAccount를 저장해야 합니다.  
+자세한 부분은 FCM 관련문서를 참고해주세요.
 
 ## FFmpeg 설치
 동영상 인코딩을 위해, FFmpeg를 필요로 합니다.    
-LGPL 라이선스이며, 서브프로세스로 호출하기에, 별도의 이슈는 없습니다.   
+LGPL 라이선스이며, 서브프로세스로 호출하여 사용합니다.
 [Download FFmpeg](https://www.ffmpeg.org/download.html)을 참조하십시오.  
 
 ## 서버 시작하기
