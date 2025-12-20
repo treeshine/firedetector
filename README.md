@@ -9,17 +9,18 @@
 
 ## 👥 팀원 및 역할
 
-| 학번 | 이름 | 역할 |
-|---|---|---|
+| 학번     | 이름   | 역할                                        |
+| -------- | ------ | ------------------------------------------- |
 | 20215106 | 강채운 | 백업서버 구현, 클라우드 백업 인프라 IaC구축 |
-| 20215203 | 이동혁 | Mobile APP 개발 및 구축 |
-| 20225123| 김성호 | 모델 이벤트 로직 개발, 프론트엔드 개발 |
-| 20225132 | 김인우 | LLM API 관리 및 참여 |
+| 20215203 | 이동혁 | Mobile APP 개발 및 구축                     |
+| 20225123 | 김성호 | 모델 이벤트 로직 개발, 프론트엔드 개발      |
+| 20225132 | 김인우 | LLM API 관리 및 참여                        |
 
 ## 🔥 주요 기능
+
 - YOLO모델기반 화재 탐지
 - Gemini API를 통한 2차 검증
-- 실시간 대시보드 제공 
+- 실시간 대시보드 제공
 - FCM을 통한 모바일 실시간 알림
 - 화재 1차감지시점부터 영상을 별도 백업저장(로컬 및 클라우드) -> 추후 보험 자료 등에 사용 가능
 - 오탐데이터 피드백 -> 추후 모델 보완에 사용
@@ -28,12 +29,14 @@
 
 **"진짜 불인가요?" - YOLO + LLM 이중 검증**
 단순히 빨간색을 불로 인식하는 기존 Vision AI의 한계를 LLM 검증으로 극복했습니다.
-| 기존 방식 (YOLO Only) | 2차 검증 (with LLM) |
-| --- | --- |
-| 빨간 조명, 촛불, 요리 중인 가스불을 모두 '화재'로 오탐지 | 이미지의 맥락(Context)을 파악하여 위험한 상황인지 재확인
-| "어? 불 같다! (신뢰도 70%)" → 오경보 발생 | AI Agent 분석 → 알림 보류 (안전)
+
+| 기존 방식 (YOLO Only)                                    | 2차 검증 (with LLM)                                      |
+| -------------------------------------------------------- | -------------------------------------------------------- |
+| 빨간 조명, 촛불, 요리 중인 가스불을 모두 '화재'로 오탐지 | 이미지의 맥락(Context)을 파악하여 위험한 상황인지 재확인 |
+| "어? 불 같다! (신뢰도 70%)" → 오경보 발생                | AI Agent 분석 → 알림 보류 (안전)                         |
 
 ## ⚡️ 화재 이벤트 동작 로직
+
 ```plaintext
 ┌─────────────────┐
 │  Start main.py  │
@@ -91,13 +94,14 @@
 ```
 
 ## 🏗️ 시스템 아키텍처
+
 ![Architecture](docs/images/readme/architecture.png)
 
-| 주요 구성 요소 | 설명 |
-| --- | --- |
-| 1. Edge Device | 카메라 영상 캡처 및 YOLO Lite 화재 특화 모델로 1차 의심 상황 포착 (Target: Raspberry Pi 4) & Gemini 2차 검증 |
-| 02. Backend Server | FastAPI 기반. 블랙박스 영상 저장 & 피드백 루프 구축 | 
-| 03. User Client | Android App (FCM 알림) & Web Dashboard (Streamlit 모니터링) |
+| 주요 구성 요소           | 설명                                                                                                                  |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| 1. Edge Device           | 카메라 영상 캡처 및 YOLO Lite 화재 특화 모델로 1차 의심 상황 포착 (Target: Raspberry Pi 4) & Gemini 2차 검증          |
+| 02. Backend Server       | FastAPI 기반. 블랙박스 영상 저장 & 피드백 루프 구축                                                                   |
+| 03. User Client          | Android App (FCM 알림) & Web Dashboard (Streamlit 모니터링)                                                           |
 | 04. Cloudflare R2 Bucket | 백업 및 오탐신고 비디오 저장 아카이브 및 Pre-signed URL을 통한 임시 오브젝트 개방, Egress 비용 0원의 비용 효율적 백업 |
 
 > 현재 프로토타입은 PC 환경에서 개발되었으며, 추후 라즈베리파이로 포팅 가능한 구조로 설계되었습니다.
@@ -106,7 +110,76 @@
 
 ### Android
 
+```bash
+android
+├── app                         # 실제 안드로이드 애플리케이션 모듈
+│   ├── build.gradle.kts        # 앱 모듈 Gradle 설정
+│   ├── proguard-rules.pro      # 릴리즈용 난독화 규칙
+│   └── src
+│       └── main
+│           ├── AndroidManifest.xml   # 앱 진입점 및 권한 설정
+│           ├── java/com/hallymUniv/fire_detector
+│           │   ├── MainActivity.kt   # 앱 메인 액티비티
+│           │
+│           │   ├── data
+│           │   │   └── UrlDataStore.kt
+│           │   │       # 서버 API 주소 저장 (DataStore 기반 설정 관리)
+│           │
+│           │   ├── fcm
+│           │   │   ├── FireFirebaseMessagingService.kt
+│           │   │   │   # FCM 메시지 수신 서비스
+│           │   │   └── NotificationUtil.kt
+│           │   │       # 화재 알림(Notification) 생성 유틸
+│           │
+│           │   └── ui
+│           │       ├── dashboard
+│           │       │   └── DashboardScreen.kt
+│           │       │       # 화재 감지 상태 대시보드 UI
+│           │       │
+│           │       ├── setup
+│           │       │   └── UrlSetupScreen.kt
+│           │       │       # 서버 주소 초기 설정 화면
+│           │       │
+│           │       ├── splash
+│           │       │   └── SplashScreen.kt
+│           │       │       # 앱 시작 시 스플래시 화면
+│           │       │
+│           │       ├── navigation
+│           │       │   └── AppNavHost.kt
+│           │       │       # Jetpack Compose Navigation 관리
+│           │       │
+│           │       ├── icons
+│           │       │   └── Fire.kt
+│           │       │       # 커스텀 아이콘 정의
+│           │       │
+│           │       └── theme
+│           │           ├── Color.kt
+│           │           ├── Theme.kt
+│           │           └── Type.kt
+│           │               # 앱 공통 테마 및 디자인 시스템
+│           │
+│           └── res
+│               ├── values        # 색상, 문자열, 테마 리소스
+│               ├── drawable      # 아이콘 및 이미지 리소스
+│               ├── mipmap-*      # 앱 런처 아이콘
+│               └── xml
+│                   ├── backup_rules.xml
+│                   └── data_extraction_rules.xml
+│
+├── gradle                      # Gradle Wrapper 관련 파일
+├── build.gradle.kts            # 프로젝트 전체 Gradle 설정
+├── settings.gradle.kts         # 멀티 모듈 구성 설정
+├── gradlew / gradlew.bat       # Gradle 실행 스크립트
+├── gradle.properties           # Gradle 공통 옵션
+├── local.properties            # 로컬 SDK 경로 (환경 의존)
+│
+├── .gradle/                    #  Gradle 캐시 (원래 gitignore 대상)
+├── .idea/                      #  Android Studio 설정 파일
+└── build/                      #  빌드 결과물
+```
+
 ### Backup Server
+
 ```bash
 backup-server
 ├── .env                    # 환경 변수 (git 추적 제외)
@@ -114,20 +187,21 @@ backup-server
 ├── serviceAccountKey.json  # FCM serviceAccount (git 추적 제외)
 ├── main.py                 # 애플리케이션 진입점
 ├── requirements.txt        # 의존성 목록
-└── src 
+└── src
     ├── api                 # REST API 및 Websocket 핸들러
     │   └── v1              # API v1
     ├── backup              # 백업 워커 프로세스 로직
     ├── core                # 프로젝트 설정 (config, logger 설정 등)
     ├── db                  # DB 연결 설정 (BaseModel, engine 등)
     │   └── models          # DB 모델 설정
-    ├── middleware          # 미들웨어 
+    ├── middleware          # 미들웨어
     ├── repository          # 데이터 접근 계층
     ├── schemas             # Pydantic 스키마 - 요청 및 응답 json body 매핑
     └── services            # 주요 비즈니스 로직 처리
 ```
 
 ### Cloud Backup
+
 ```bash
 cloud-backup
 ├── blackbox_bucket.tf          # 백업데이터 저장소 버킷 정의
@@ -142,6 +216,7 @@ cloud-backup
 ### Model
 
 ### Frontend
+
 ```bash
 frontend
 ├── .env                            # 환경 변수 (git 추적 제외)
@@ -168,19 +243,23 @@ frontend
 이 프로젝트는 AGPL-3.0라이선스를 따릅니다.
 
 주요 의존성:
-| 이름 | 라이선스 | 비고 |
-|---|---|---|
-| [Streamlit](https://github.com/streamlit/streamlit/tree/develop) | Apache-2.0 License | |
-| [FastAPI](https://github.com/fastapi/fastapi) | MIT License | |
-| [SQLAlchemy](https://github.com/sqlalchemy/sqlalchemy) | MIT License | |
-| [SQLite](https://sqlite.org/purchase/license) | Public Domain | |
-| [Numpy](https://github.com/numpy/numpy) | BSD 3-Clause | |
-| [Boto3(AWS SDK)](https://github.com/boto/boto3) | Apache-2.0 License | |
-| [OpenCV](https://github.com/opencv/opencv) | Apache-2.0 License | |
-| [YOLOv8](https://github.com/ultralytics/ultralytics) | AGPL-3.0 License | |
-| [FFmpeg](https://github.com/FFmpeg/FFmpeg) | LGPL/GPL | 서브프로세스로 실행하므로 아무 상관 없음 |
-| [Opentofu](https://github.com/opentofu/opentofu) | MPL 2.0 License | HCL문법 사용 & Opentofu 실행에는 아무 상관없음 |
 
+| 이름                                                                       | 라이선스           | 비고                                           |
+| -------------------------------------------------------------------------- | ------------------ | ---------------------------------------------- |
+| [Streamlit](https://github.com/streamlit/streamlit/tree/develop)           | Apache-2.0 License |                                                |
+| [FastAPI](https://github.com/fastapi/fastapi)                              | MIT License        |                                                |
+| [SQLAlchemy](https://github.com/sqlalchemy/sqlalchemy)                     | MIT License        |                                                |
+| [SQLite](https://sqlite.org/purchase/license)                              | Public Domain      |                                                |
+| [Numpy](https://github.com/numpy/numpy)                                    | BSD 3-Clause       |                                                |
+| [Boto3(AWS SDK)](https://github.com/boto/boto3)                            | Apache-2.0 License |                                                |
+| [OpenCV](https://github.com/opencv/opencv)                                 | Apache-2.0 License |                                                |
+| [YOLOv8](https://github.com/ultralytics/ultralytics)                       | AGPL-3.0 License   |                                                |
+| [FFmpeg](https://github.com/FFmpeg/FFmpeg)                                 | LGPL/GPL           | 서브프로세스로 실행하므로 아무 상관 없음       |
+| [Opentofu](https://github.com/opentofu/opentofu)                           | MPL 2.0 License    | HCL문법 사용 & Opentofu 실행에는 아무 상관없음 |
+| [Fire Icon](https://composables.com/icons/icon-libraries/heroicons/fire)   | MIT License        | Android Client 개발에 사용된 불 아이콘 코드    |
+| [firebase-android-sdk](https://github.com/firebase/firebase-android-sdk)   | Apache-2.0 License |                                                |
+| [firebase-admin-python](https://github.com/firebase/firebase-admin-python) | Apache-2.0 License |                                                |
+| [androidx](https://github.com/androidx/androidx)                           | Apache-2.0 License |                                                |
 
 ## 📜 기타 문서
 
