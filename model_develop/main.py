@@ -1,16 +1,19 @@
-import cv2
-from ultralytics import YOLO
-import time
+import asyncio
+import json
 import math
 import socket
-import json
-import requests
-from datetime import datetime
+import struct
 import threading
-from PIL import Image
-from gemini_analyzer import analyze_frame_with_gemini
-import asyncio
+import time
+from datetime import datetime
+
+import cv2
+import requests
 import websockets
+from PIL import Image
+from ultralytics import YOLO
+
+from gemini_analyzer import analyze_frame_with_gemini
 
 # --- 설정 ---
 fire_model = YOLO("fireModel/best.pt")  # 화재 감지 모델 (매 프레임)
@@ -49,11 +52,55 @@ GEMINI_LOG_FILE = "gemini_analysis_log.txt"
 ANIMAL_DETECTION_SKIP = 3  # 매 3프레임마다 동물 감지 (더 빠름)
 frame_count = 0
 
+# --- TCP 프로토콜 메시지 타입
+MSG_TYPE_FRAME = 0x01
+MSG_TYPE_FIRE_EVENT = 0x02
+MSG_TYPE_ANIMAL_EVENT = 0x03
+MSG_TYPE_GEMINI_RESULT = 0x04
+
 print(f"화재 감지 모델 클래스: {TARGET_CLASS}")
 print(f"동물 감지 모델 클래스: {ANIMAL_CLASSES}")
 print(f"성능 최적화: 매 {ANIMAL_DETECTION_SKIP}프레임마다 동물 감지")
 print(f"Gemini 분석: 매 {GEMINI_CHECK_INTERVAL}초마다 실행")
 print("--- 실시간 화재 + 동물 감지를 시작합니다 ---")
+
+# === TCP 전송 함수 ===
+def send_tcp_message(sock, msg_type: int, payload: bytes):
+    """
+    TCP로 타입 기반 메시지 전송
+    Protocol: [4 bytes: size of payload][1 byte: type][payload]
+    """
+    if sock is None:
+        return False
+    try:
+        header = struct.pack('>I', len(payload)) + struct.pack('B', msg_type)
+        sock.sendall(header + payload)
+        return True
+    except Exception as e:
+        print(f"TCP 전송 오류: {e}")
+        return False
+
+def send_frame(sock, frame):
+    """이미지 프레임 전송 (타입: 0x01)"""
+    ret, encoded = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
+    if not ret:
+        return False
+    return send_tcp_message(sock, MSG_TYPE_FRAME, encoded.tobytes())
+
+def send_fire_event(sock, event_data: dict):
+    """화재 이벤트 전송 (타입: 0x02)"""
+    payload = json.dumps(event_data, ensure_ascii=False).encode('utf-8')
+    return send_tcp_message(sock, MSG_TYPE_FIRE_EVENT, payload)
+
+def send_animal_event(sock, event_data: dict):
+    """동물 이벤트 전송 (타입: 0x03)"""
+    payload = json.dumps(event_data, ensure_ascii=False).encode('utf-8')
+    return send_tcp_message(sock, MSG_TYPE_ANIMAL_EVENT, payload)
+
+def send_gemini_result(sock, event_data: dict):
+    """Gemini 분석 결과 전송(타입: 0x04)"""
+    payload = json.dumps(event_data, ensure_ascii=False).encode('utf-8')
+    return send_tcp_message(sock, MSG_TYPE_GEMINI_RESULT, payload)
 
 # === WebSocket 관련 함수 ===
 async def websocket_sender(frame_queue: asyncio.Queue):
@@ -156,14 +203,18 @@ def run_gemini_analysis_thread(frame_bgr):
         log_message = f"[{timestamp}] Gemini 분석 결과: {result}"
         print(f"\n>>> {log_message}\n")
         
-        # 파일에 기록
-        with open(GEMINI_LOG_FILE, "a", encoding="utf-8") as f:
-            f.write(log_message + "\n")
+        # TCP로 Gemini 결과 전송
+        gemini_data = {
+            "event_type": "gemini_analysis",
+            "timestamp": datetime.now().isoformat(),
+            "result": result
+        }
+        send_gemini_result(client_socket, gemini_data)
             
     except Exception as e:
         print(f"Gemini 스레드 오류: {e}")
 
-# 로컬호스트에서 프레임을 송신할 소켓 서버 설정
+# 송신할 소켓 서버 설정
 HOST = 'localhost'
 PORT = 5005
 
@@ -312,20 +363,8 @@ try:
 
         # 4. 프레임을 연결된 클라이언트로 송신
         if client_socket:
-            try:
-                # JPEG로 압축
-                ret_encode, frame_encoded = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
-                data = frame_encoded.tobytes()
-                
-                # 프레임 크기와 데이터 전송
-                frame_size = len(data)
-                client_socket.sendall(frame_size.to_bytes(4, byteorder='big'))
-                client_socket.sendall(data)
-            except (BrokenPipeError, ConnectionResetError):
+            if not send_frame(client_socket, frame):
                 print("클라이언트 연결 해제됨")
-                client_socket = None
-            except Exception as e:
-                print(f"송신 오류: {e}")
                 client_socket = None
         
         if websocket_connected:
@@ -349,12 +388,10 @@ try:
                     "message": "🔥 화재가 감지되었습니다!"
                 }
                 
-                try:
-                    with open(FIRE_EVENT_LOG_FILE, 'w', encoding='utf-8') as f:
-                        json.dump(fire_event_data, f, indent=2, ensure_ascii=False)
-                except Exception as e:
-                    print(f"화재 이벤트 저장 오류: {e}")
-            
+                # TCP로 화재 이벤트 전송
+                if client_socket:
+                    send_fire_event(client_socket, fire_event_data)
+                            
             if (current_time - last_alert_time) > ALERT_COOLDOWN:
                 print(">>> 화재 알림 조건 충족!")
                 last_alert_time = current_time
@@ -372,11 +409,9 @@ try:
                 "message": f"🐾 {animal_list}이(가) 감지되었습니다!"
             }
             
-            try:
-                with open(ANIMAL_EVENT_LOG_FILE, 'w', encoding='utf-8') as f:
-                    json.dump(animal_event_data, f, indent=2, ensure_ascii=False)
-            except Exception as e:
-                print(f"동물 이벤트 저장 오류: {e}")
+            # TCP로 동물 이벤트 전송
+            if client_socket:
+                send_fire_event(client_socket, fire_event_data)
 
         # GUI 이벤트 처리를 위해 waitKey 사용 (30ms 대기)
         if cv2.waitKey(30) & 0xFF == ord('q'):
