@@ -215,6 +215,24 @@ cloud-backup
 
 ### Model
 
+```bash
+model_develop
+├── fireModel
+│   ├── best.pt                # 화재 감지용 YOLOv8 커스텀 학습 모델 (최종)
+│   └── yolov8s.pt             # YOLOv8s 기본 사전학습 모델
+│
+├── main.py                    # 전체 화재 감지 파이프라인 메인 실행 파일
+├── gemini_analyzer.py         # Gemini Vision API 기반 2차 화재 검증 로직
+├── gemini_vision_example.py   # Gemini Vision API 테스트 및 예제 코드
+│
+├── fire_events.json           # 화재 감지 이벤트 로그 (timestamp, confidence 등)
+├── animal_events.json         # 동물 감지 이벤트 로그 (오탐 분석용)
+├── gemini_analysis_log.txt    # Gemini 분석 결과 텍스트 로그
+│
+├── requirements.txt           # 모델 실행에 필요한 Python 의존성 목록
+└── test.jpg                   # Gemini Vision 및 모델 테스트용 샘플 이미지
+```
+
 ### Frontend
 
 ```bash
@@ -237,6 +255,7 @@ frontend
 - [백업 서버 셋업 가이드](docs/setup-backup-server.md)
 - [HeadScale 세팅 가이드](docs/setup-headscale.md)
 - [Streamlit 세팅 가이드](docs/setup-streamlit.md)
+- [FCM 세팅 가이드](docs/setup-fcm.md)
 
 ## 👨‍⚖️ License
 
