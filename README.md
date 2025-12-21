@@ -255,6 +255,7 @@ frontend
 - [백업 서버 셋업 가이드](docs/setup-backup-server.md)
 - [HeadScale 세팅 가이드](docs/setup-headscale.md)
 - [Streamlit 세팅 가이드](docs/setup-streamlit.md)
+- [YOLO 모델 세팅 가이드](docs/setup-main.md)
 - [FCM 세팅 가이드](docs/setup-fcm.md)
 
 ## 👨‍⚖️ License

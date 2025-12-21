@@ -45,7 +45,7 @@ R2_FP_BUCKET_NAME=fp-bucket                      # 오탐데이터 버킷명
 
 ## FCM ServiceAccount 받아오기
 `main.py`와 같은 디렉토리에서 FCM의 서버 serviceAccount를 저장해야 합니다.  
-자세한 부분은 FCM 관련문서를 참고해주세요.
+자세한 부분은 [FCM 관련문서](./setup-fcm.md)를 참고해주세요.
 
 ## FFmpeg 설치
 동영상 인코딩을 위해, FFmpeg를 필요로 합니다.    
